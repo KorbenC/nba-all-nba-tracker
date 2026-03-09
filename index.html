@@ -502,7 +502,7 @@
           <div id="leadersChart" class="leaders-chart"></div>
         </div>
       </div>
-      <p class="chart-legend">Bar: first segment = games played (blue/orange), gray segment = games missed (team games − player GP). Scale 0–82; 65 line = eligibility. “Can miss X” = how many more games they can miss and still reach 65; “Eliminated” = cannot reach 65.</p>
+      <p class="chart-legend">Bar: first segment = games played (blue/orange), gray segment = games missed (team games − player GP). Scale 0–82; 65 line = eligibility. “In” = already at 65+ games; “Can miss X” = games they can still miss and reach 65; “Eliminated” = cannot reach 65.</p>
     </div>
 
     <p id="apiError" class="error-msg" style="display: none;"></p>
@@ -561,7 +561,7 @@
         const canReach65 = p.gp + teamGamesLeft >= GAMES_REQUIRED;
         const needToPlay = Math.max(0, GAMES_REQUIRED - gp);
         const gamesCanMiss = canReach65 ? (teamGamesLeft - needToPlay) : 0;
-        const reachLabel = canReach65 ? `Can miss ${gamesCanMiss}` : 'Eliminated';
+        const reachLabel = gp >= GAMES_REQUIRED ? 'Eligible' : (canReach65 ? `Can miss ${gamesCanMiss}` : 'Eliminated');
         const rowClass = canReach65 ? '' : 'eliminated';
         const metaClass = eligible ? '' : 'ineligible';
         const statVal = (p[sortKey] != null ? Number(p[sortKey]) : 0).toFixed(1);

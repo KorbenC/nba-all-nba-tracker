@@ -318,6 +318,121 @@
       padding-top: 0.75rem;
       border-top: 1px solid var(--border);
     }
+
+    /* Horizontal scroll on small screens so chart columns don't collapse */
+    .chart-table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 0 -0.25rem;
+    }
+    .chart-table-inner {
+      min-width: 600px;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem 0.75rem;
+        overflow-x: hidden;
+        padding-left: max(0.75rem, env(safe-area-inset-left));
+        padding-right: max(0.75rem, env(safe-area-inset-right));
+      }
+      .container {
+        max-width: 100%;
+      }
+      header {
+        margin-bottom: 1.5rem;
+      }
+      h1 {
+        font-size: 1.35rem;
+      }
+      .subtitle {
+        font-size: 0.85rem;
+      }
+      .header-controls {
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+      }
+      .stat-select {
+        min-height: 44px;
+        padding: 0.5rem 0.75rem;
+        font-size: 1rem;
+        min-width: 100%;
+        max-width: 280px;
+      }
+      .rule-badge {
+        margin-top: 0.5rem;
+      }
+      .leaders-chart-wrapper {
+        padding: 1rem 0.75rem;
+        border-radius: 10px;
+      }
+      .chart-scale {
+        font-size: 0.65rem;
+      }
+      .chart-legend {
+        font-size: 0.7rem;
+        margin-top: 0.75rem;
+        padding-top: 0.5rem;
+      }
+      .chart-row,
+      .chart-header {
+        gap: 0.5rem;
+        min-height: 2.25rem;
+      }
+      .chart-label {
+        flex: 0 0 160px;
+        font-size: 0.85rem;
+      }
+      .chart-label .team {
+        font-size: 0.75rem;
+      }
+      .chart-meta {
+        flex: 0 0 9rem;
+        font-size: 0.75rem;
+      }
+      .chart-reach {
+        flex: 0 0 5.5rem;
+        font-size: 0.7rem;
+      }
+      .footer-note {
+        font-size: 0.75rem;
+        margin-top: 1rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 0.75rem 0.5rem;
+      }
+      h1 {
+        font-size: 1.2rem;
+      }
+      .subtitle {
+        font-size: 0.8rem;
+      }
+      .chart-table-inner {
+        min-width: 560px;
+      }
+      .chart-header .chart-label { flex: 0 0 140px; }
+      .chart-header .chart-pos { flex: 0 0 3rem; }
+      .chart-header .chart-reach { flex: 0 0 5rem; }
+      .chart-header .chart-meta { flex: 0 0 8rem; }
+      .chart-label {
+        flex: 0 0 140px;
+        font-size: 0.8rem;
+      }
+      .chart-pos {
+        flex: 0 0 3rem;
+        font-size: 0.7rem;
+      }
+      .chart-reach {
+        flex: 0 0 5rem;
+      }
+      .chart-meta {
+        flex: 0 0 8rem;
+        font-size: 0.7rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -343,14 +458,18 @@
         <span>82</span>
         <span id="seasonGamesNote" class="season-games-note"></span>
       </div>
-      <div class="chart-header" aria-hidden="true">
-        <div class="chart-label">Player</div>
-        <div class="chart-pos">Pos</div>
-        <div class="chart-bar-cell">Games</div>
-        <div class="chart-reach">Reach 65?</div>
-        <div class="chart-meta">GP · Missed · Stat</div>
+      <div class="chart-table-scroll" role="region" aria-label="Eligibility chart">
+        <div class="chart-table-inner">
+          <div class="chart-header" aria-hidden="true">
+            <div class="chart-label">Player</div>
+            <div class="chart-pos">Pos</div>
+            <div class="chart-bar-cell">Games</div>
+            <div class="chart-reach">Reach 65?</div>
+            <div class="chart-meta">GP · Missed · Stat</div>
+          </div>
+          <div id="leadersChart" class="leaders-chart"></div>
+        </div>
       </div>
-      <div id="leadersChart" class="leaders-chart"></div>
       <p class="chart-legend">Bar = games played. “Missed” = team games played minus player GP (so Jokic with 48 GP on a 64-game Nuggets = 16 missed). “Can reach 65” = player can still play 65+ by season end.</p>
     </div>
 

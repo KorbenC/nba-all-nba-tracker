@@ -1,0 +1,1 @@
+window.BACKEND_URL = 'https://nba-all-nba-tracker.onrender.com/';

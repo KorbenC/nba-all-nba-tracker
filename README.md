@@ -17,6 +17,14 @@ Track top 24 players (All-Star caliber) and 65-game eligibility for All-NBA hono
    ```
    Open http://localhost:8080.
 
+## Deploy to Render (frontend + backend in one service)
+
+1. Create a **Web Service**, connect your repo. Leave **Root Directory** blank (use repo root so the app can serve `index.html` and `config.js`).
+2. **Build command:** `cd backend && pip install -r requirements.txt`
+3. **Start command:** `cd backend && gunicorn app:app`
+4. Deploy. The service URL serves the tracker UI at `/` and the API at `/api/leaders` and `/api/health`. Use **Health Check Path** `/api/health` if offered.
+5. No need to set `BACKEND_URL` in `config.js` when the frontend is served from the same origin.
+
 ## Project layout
 
 - `index.html` — Single-page app (chart only).

@@ -5,11 +5,14 @@ Uses nba_api (NBA.com) for leaders data; no API key required.
 import os
 import time
 import pandas as pd
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
+
+# Repo root (parent of backend/) so we can serve index.html and config.js when deployed from repo root
+_FRONTEND_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
 # In-memory cache: key -> (response_dict, expiry_time)
 _LEADERS_CACHE = {}
@@ -185,6 +188,18 @@ def leaders():
     }
     _LEADERS_CACHE[cache_key] = (out, now + CACHE_TTL_SECONDS)
     return jsonify(out)
+
+
+@app.route("/")
+def index():
+    """Serve the frontend when deployed from repo root (e.g. Render with root directory = repo)."""
+    return send_from_directory(_FRONTEND_ROOT, "index.html", mimetype="text/html")
+
+
+@app.route("/config.js")
+def config_js():
+    """Serve config.js so the frontend can override BACKEND_URL if needed."""
+    return send_from_directory(_FRONTEND_ROOT, "config.js", mimetype="application/javascript")
 
 
 @app.route("/api/health")

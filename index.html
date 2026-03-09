@@ -364,7 +364,8 @@
     const GAMES_REQUIRED = 65;
     const GAMES_IN_SEASON = 82;
     const MISSED_THRESHOLD = 18;
-    const BACKEND_URL = (window.BACKEND_URL || '').trim() || 'http://localhost:5001';
+    // Empty = same-origin (when frontend is served by this app, e.g. on Render). For local static dev set BACKEND_URL in config.js to http://localhost:5001
+    const BACKEND_URL = (typeof window.BACKEND_URL !== 'undefined' && window.BACKEND_URL != null && String(window.BACKEND_URL).trim() !== '') ? String(window.BACKEND_URL).trim() : '';
 
     // Sample data fallback when backend unavailable
     const SAMPLE_DATA = [

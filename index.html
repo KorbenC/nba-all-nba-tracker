@@ -24,6 +24,7 @@
       --text-muted: #71717a;
       --border: #27272a;
       --track-bg: #e5e7eb;
+      --bar-missed: #9ca3af;
       --badge-bg: rgba(59, 130, 246, 0.18);
       --badge-text: #93c5fd;
     }
@@ -234,7 +235,7 @@
       text-align: center;
     }
     .chart-header .chart-reach { flex: 0 0 7rem; text-align: center; }
-    .chart-header .chart-meta { flex: 0 0 11rem; text-align: right; }
+    .chart-header .chart-meta { flex: 0 0 6rem; text-align: right; }
 
     .chart-row {
       display: flex;
@@ -288,6 +289,37 @@
       opacity: 0.9;
     }
 
+    .chart-bar-fill .chart-bar-num,
+    .chart-bar-missed .chart-bar-num {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 0 1px rgba(0,0,0,0.5);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .chart-bar-fill .chart-bar-num {
+      left: 4px;
+    }
+    .chart-bar-missed .chart-bar-num {
+      left: 4px;
+      color: #1f2937;
+      text-shadow: 0 0 1px rgba(255,255,255,0.4);
+    }
+
+    .chart-bar-missed {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      border-radius: 4px;
+      background: var(--bar-missed);
+      opacity: 0.85;
+      transition: left 0.3s ease, width 0.3s ease;
+    }
+
     .chart-marker-65 {
       position: absolute;
       left: calc(65 / 82 * 100%);
@@ -300,7 +332,7 @@
     }
 
     .chart-meta {
-      flex: 0 0 11rem;
+      flex: 0 0 6rem;
       font-size: 0.8rem;
       text-align: right;
       color: var(--text-muted);
@@ -387,7 +419,7 @@
         font-size: 0.75rem;
       }
       .chart-meta {
-        flex: 0 0 9rem;
+        flex: 0 0 5.5rem;
         font-size: 0.75rem;
       }
       .chart-reach {
@@ -416,7 +448,7 @@
       .chart-header .chart-label { flex: 0 0 140px; }
       .chart-header .chart-pos { flex: 0 0 3rem; }
       .chart-header .chart-reach { flex: 0 0 5rem; }
-      .chart-header .chart-meta { flex: 0 0 8rem; }
+      .chart-header .chart-meta { flex: 0 0 5.5rem; }
       .chart-label {
         flex: 0 0 140px;
         font-size: 0.8rem;
@@ -429,7 +461,7 @@
         flex: 0 0 5rem;
       }
       .chart-meta {
-        flex: 0 0 8rem;
+        flex: 0 0 5rem;
         font-size: 0.7rem;
       }
     }
@@ -464,13 +496,13 @@
             <div class="chart-label">Player</div>
             <div class="chart-pos">Pos</div>
             <div class="chart-bar-cell">Games</div>
-            <div class="chart-reach">Reach 65?</div>
-            <div class="chart-meta">GP · Missed · Stat</div>
+            <div class="chart-reach">Can miss</div>
+            <div class="chart-meta">Stat</div>
           </div>
           <div id="leadersChart" class="leaders-chart"></div>
         </div>
       </div>
-      <p class="chart-legend">Bar = games played. “Missed” = team games played minus player GP (so Jokic with 48 GP on a 64-game Nuggets = 16 missed). “Can reach 65” = player can still play 65+ by season end.</p>
+      <p class="chart-legend">Bar: first segment = games played (blue/orange), gray segment = games missed (team games − player GP). Scale 0–82; 65 line = eligibility. “Can miss X” = how many more games they can miss and still reach 65; “Eliminated” = cannot reach 65.</p>
     </div>
 
     <p id="apiError" class="error-msg" style="display: none;"></p>
@@ -527,13 +559,20 @@
         const teamGp = p.team_games_played != null ? p.team_games_played : season;
         const teamGamesLeft = Math.max(0, GAMES_IN_SEASON - teamGp);
         const canReach65 = p.gp + teamGamesLeft >= GAMES_REQUIRED;
+        const needToPlay = Math.max(0, GAMES_REQUIRED - gp);
+        const gamesCanMiss = canReach65 ? (teamGamesLeft - needToPlay) : 0;
+        const reachLabel = canReach65 ? `Can miss ${gamesCanMiss}` : 'Eliminated';
         const rowClass = canReach65 ? '' : 'eliminated';
         const metaClass = eligible ? '' : 'ineligible';
-        const metaText = eligible
-          ? `${p.gp} GP · missed ${missed}`
-          : `${p.gp} GP · missed ${missed} · Ineligible`;
         const statVal = (p[sortKey] != null ? Number(p[sortKey]) : 0).toFixed(1);
         const posDisplay = (p.position && String(p.position).trim()) ? escapeHtml(p.position) : '—';
+        const teamGpCap = Math.min(teamGp, GAMES_IN_SEASON);
+        const missedSegment = Math.max(0, teamGpCap - gp);
+        const missedLeft = pct(gp);
+        const missedWidth = pct(missedSegment);
+        const missedSegmentHtml = missedSegment > 0
+          ? `<div class="chart-bar-missed" style="left: ${missedLeft}%; width: ${missedWidth}%;" aria-hidden="true">${missedWidth >= 8 ? `<span class="chart-bar-num">${missedSegment}</span>` : ''}</div>`
+          : '';
         return `
           <div class="chart-row ${rowClass}">
             <div class="chart-label">
@@ -542,11 +581,12 @@
             </div>
             <div class="chart-pos" title="Position">${posDisplay}</div>
             <div class="chart-bar-track">
-              <div class="chart-bar-fill ${eligible ? 'eligible' : 'ineligible'}" style="width: ${pct(gp)}%;"></div>
+              <div class="chart-bar-fill ${eligible ? 'eligible' : 'ineligible'}" style="width: ${pct(gp)}%;">${pct(gp) >= 10 ? `<span class="chart-bar-num" aria-hidden="true">${gp}</span>` : ''}</div>
+              ${missedSegmentHtml}
               <div class="chart-marker-65" aria-hidden="true"></div>
             </div>
-            <div class="chart-reach ${canReach65 ? 'yes' : 'no'}">${canReach65 ? 'Can reach 65' : 'Eliminated'}</div>
-            <div class="chart-meta ${metaClass}">${escapeHtml(metaText)} · ${statLabel} ${statVal}</div>
+            <div class="chart-reach ${canReach65 ? 'yes' : 'no'}">${reachLabel}</div>
+            <div class="chart-meta ${metaClass}">${statLabel} ${statVal}</div>
           </div>
         `;
       }).join('');

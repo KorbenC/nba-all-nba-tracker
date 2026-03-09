@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NBA All-NBA Eligibility Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f0f12;
+      --bg-card: #18181d;
+      --bg-row: #1e1e24;
+      --bg-row-alt: #25252c;
+      --accent: #e63946;
+      --accent-soft: rgba(230, 57, 70, 0.15);
+      /* Color-blind friendly: blue = eligible, orange = ineligible (not red/green) */
+      --eligible: #2563eb;
+      --eligible-soft: rgba(37, 99, 235, 0.15);
+      --ineligible: #ea580c;
+      --ineligible-soft: rgba(234, 88, 12, 0.15);
+      --text: #f4f4f5;
+      --text-muted: #71717a;
+      --border: #27272a;
+      --track-bg: #e5e7eb;
+      --badge-bg: rgba(59, 130, 246, 0.18);
+      --badge-text: #93c5fd;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .rule-badge {
+      display: inline-block;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      margin-top: 1rem;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .stat-select {
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.4rem 0.75rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .chart-row.eliminated {
+      opacity: 0.7;
+    }
+
+    .chart-row.eliminated .chart-label .name {
+      color: var(--text-muted);
+    }
+
+    .chart-reach {
+      flex: 0 0 7rem;
+      font-size: 0.75rem;
+      text-align: center;
+    }
+
+    .chart-reach.yes {
+      color: var(--eligible);
+      font-weight: 600;
+    }
+
+    .chart-reach.no {
+      color: var(--ineligible);
+    }
+
+    .chart-pos {
+      flex: 0 0 3.5rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .footer-note {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+    }
+
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error-msg {
+      font-size: 0.85rem;
+      color: var(--accent);
+      margin-top: 0.75rem;
+      padding: 0.5rem;
+      background: var(--accent-soft);
+      border-radius: 6px;
+    }
+
+    .using-sample {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+
+    .leaders-chart-wrapper {
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 1.25rem 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .chart-scale {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      padding: 0 0.25rem;
+    }
+
+    .chart-scale .scale-65 {
+      color: var(--eligible);
+      font-weight: 600;
+    }
+
+    .chart-scale .season-games-note {
+      margin-left: auto;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .leaders-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-height: 2rem;
+      padding-bottom: 0.35rem;
+      margin-bottom: 0.25rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .chart-header .chart-label,
+    .chart-header .chart-pos,
+    .chart-header .chart-reach,
+    .chart-header .chart-meta {
+      flex: 0 0 auto;
+    }
+
+    .chart-header .chart-label { flex: 0 0 200px; }
+    .chart-header .chart-pos { flex: 0 0 3.5rem; text-align: center; }
+    .chart-header .chart-bar-cell {
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+    }
+    .chart-header .chart-reach { flex: 0 0 7rem; text-align: center; }
+    .chart-header .chart-meta { flex: 0 0 11rem; text-align: right; }
+
+    .chart-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-height: 2rem;
+    }
+
+    .chart-label {
+      flex: 0 0 200px;
+      font-size: 0.9rem;
+    }
+
+    .chart-label .name {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .chart-label .team {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-left: 0.35rem;
+    }
+
+    .chart-bar-track {
+      flex: 1;
+      height: 20px;
+      background: var(--track-bg);
+      border-radius: 4px;
+      position: relative;
+      overflow: visible;
+      min-width: 0;
+    }
+
+    .chart-bar-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .chart-bar-fill.eligible {
+      background: var(--eligible);
+      opacity: 0.9;
+    }
+
+    .chart-bar-fill.ineligible {
+      background: var(--ineligible);
+      opacity: 0.9;
+    }
+
+    .chart-marker-65 {
+      position: absolute;
+      left: calc(65 / 82 * 100%);
+      top: -2px;
+      bottom: -2px;
+      width: 2px;
+      background: var(--eligible);
+      border-radius: 1px;
+      z-index: 1;
+    }
+
+    .chart-meta {
+      flex: 0 0 11rem;
+      font-size: 0.8rem;
+      text-align: right;
+      color: var(--text-muted);
+    }
+
+    .chart-meta.ineligible {
+      color: var(--ineligible);
+      font-weight: 600;
+    }
+
+    .chart-legend {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 1rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>NBA All-NBA Eligibility Tracker</h1>
+      <p class="subtitle">82-game season · 65 games required · Miss 18+ = ineligible</p>
+      <div class="header-controls">
+        <span class="rule-badge">Pool by stat</span>
+        <select id="statSelect" class="stat-select" aria-label="Pool by stat">
+          <option value="pts">Points</option>
+          <option value="reb">Rebounds</option>
+          <option value="ast">Assists</option>
+          <option value="composite" selected>Composite (PTS + REB + AST)</option>
+        </select>
+      </div>
+    </header>
+
+    <div id="leadersChartWrapper" class="leaders-chart-wrapper">
+      <div class="chart-scale">
+        <span>0</span>
+        <span class="scale-65">65</span>
+        <span>82</span>
+        <span id="seasonGamesNote" class="season-games-note"></span>
+      </div>
+      <div class="chart-header" aria-hidden="true">
+        <div class="chart-label">Player</div>
+        <div class="chart-pos">Pos</div>
+        <div class="chart-bar-cell">Games</div>
+        <div class="chart-reach">Reach 65?</div>
+        <div class="chart-meta">GP · Missed · Stat</div>
+      </div>
+      <div id="leadersChart" class="leaders-chart"></div>
+      <p class="chart-legend">Bar = games played. “Missed” = team games played minus player GP (so Jokic with 48 GP on a 64-game Nuggets = 16 missed). “Can reach 65” = player can still play 65+ by season end.</p>
+    </div>
+
+    <p id="apiError" class="error-msg" style="display: none;"></p>
+    <p id="usingSample" class="using-sample" style="display: none;"></p>
+    <p class="footer-note" id="footerNote">Current season. Top pool by stat + previous 2 seasons’ All-NBA selections always shown (even if out of the running). Pos = position.</p>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    const GAMES_REQUIRED = 65;
+    const GAMES_IN_SEASON = 82;
+    const MISSED_THRESHOLD = 18;
+    const BACKEND_URL = (window.BACKEND_URL || '').trim() || 'http://localhost:5001';
+
+    // Sample data fallback when backend unavailable
+    const SAMPLE_DATA = [
+      { name: "Luka Dončić", team: "DAL", gp: 68, ppg: 33.9, rpg: 9.2, apg: 9.8, position: "" },
+      { name: "Giannis Antetokounmpo", team: "MIL", gp: 72, ppg: 30.8, rpg: 11.5, apg: 6.5, position: "" },
+      { name: "Shai Gilgeous-Alexander", team: "OKC", gp: 75, ppg: 30.1, rpg: 5.5, apg: 6.2, position: "" },
+      { name: "Stephen Curry", team: "GSW", gp: 58, ppg: 28.2, rpg: 4.5, apg: 6.1, position: "" },
+      { name: "Kevin Durant", team: "PHX", gp: 62, ppg: 27.8, rpg: 6.7, apg: 5.0, position: "" },
+      { name: "Jayson Tatum", team: "BOS", gp: 74, ppg: 27.2, rpg: 8.5, apg: 4.5, position: "" },
+      { name: "Donovan Mitchell", team: "CLE", gp: 55, ppg: 27.0, rpg: 4.2, apg: 5.5, position: "" },
+      { name: "Anthony Edwards", team: "MIN", gp: 79, ppg: 26.9, rpg: 5.5, apg: 5.2, position: "" },
+      { name: "LeBron James", team: "LAL", gp: 71, ppg: 25.7, rpg: 7.2, apg: 8.2, position: "" },
+      { name: "Devin Booker", team: "PHX", gp: 70, ppg: 25.4, rpg: 4.2, apg: 6.8, position: "" },
+      { name: "Tyrese Haliburton", team: "IND", gp: 69, ppg: 25.1, rpg: 4.0, apg: 11.0, position: "" },
+      { name: "Joel Embiid", team: "PHI", gp: 42, ppg: 34.7, rpg: 11.0, apg: 5.5, position: "" },
+      { name: "Nikola Jokić", team: "DEN", gp: 78, ppg: 26.4, rpg: 12.4, apg: 9.2, position: "" },
+      { name: "Kawhi Leonard", team: "LAC", gp: 52, ppg: 24.8, rpg: 6.2, apg: 3.7, position: "" },
+      { name: "Damian Lillard", team: "MIL", gp: 66, ppg: 24.6, rpg: 4.2, apg: 7.0, position: "" },
+      { name: "Trae Young", team: "ATL", gp: 54, ppg: 25.7, rpg: 2.8, apg: 10.8, position: "" },
+      { name: "Jaylen Brown", team: "BOS", gp: 73, ppg: 23.5, rpg: 5.5, apg: 3.7, position: "" },
+      { name: "Paolo Banchero", team: "ORL", gp: 76, ppg: 22.6, rpg: 7.0, apg: 5.2, position: "" },
+      { name: "Zion Williamson", team: "NOP", gp: 48, ppg: 22.9, rpg: 5.8, apg: 5.0, position: "" },
+      { name: "Jalen Brunson", team: "NYK", gp: 77, ppg: 28.7, rpg: 3.2, apg: 7.2, position: "" },
+    ];
+    const SAMPLE_SEASON_GAMES = 82;
+
+    function renderLeadersChart(players, seasonGamesPlayed, gamesRemaining, stat) {
+      const statKey = stat || 'pts';
+      const sortKey = { pts: 'ppg', reb: 'rpg', ast: 'apg' }[statKey] || 'ppg';
+      const statLabel = { pts: 'PPG', reb: 'RPG', ast: 'APG' }[statKey] || 'PPG';
+      const sorted = [...players].sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0));
+      const container = document.getElementById('leadersChart');
+      const season = seasonGamesPlayed ?? GAMES_IN_SEASON;
+      const remaining = gamesRemaining ?? Math.max(0, 82 - season);
+      const pct = (n) => (n / GAMES_IN_SEASON) * 100;
+      container.innerHTML = sorted.map((p) => {
+        const gp = Math.min(p.gp, GAMES_IN_SEASON);
+        const missed = p.missed != null ? p.missed : Math.max(0, season - p.gp);
+        const eligible = missed < MISSED_THRESHOLD;
+        const teamGp = p.team_games_played != null ? p.team_games_played : season;
+        const teamGamesLeft = Math.max(0, GAMES_IN_SEASON - teamGp);
+        const canReach65 = p.gp + teamGamesLeft >= GAMES_REQUIRED;
+        const rowClass = canReach65 ? '' : 'eliminated';
+        const metaClass = eligible ? '' : 'ineligible';
+        const metaText = eligible
+          ? `${p.gp} GP · missed ${missed}`
+          : `${p.gp} GP · missed ${missed} · Ineligible`;
+        const statVal = (p[sortKey] != null ? Number(p[sortKey]) : 0).toFixed(1);
+        const posDisplay = (p.position && String(p.position).trim()) ? escapeHtml(p.position) : '—';
+        return `
+          <div class="chart-row ${rowClass}">
+            <div class="chart-label">
+              <span class="name">${escapeHtml(p.name)}</span>
+              <span class="team">${escapeHtml(p.team)}</span>
+            </div>
+            <div class="chart-pos" title="Position">${posDisplay}</div>
+            <div class="chart-bar-track">
+              <div class="chart-bar-fill ${eligible ? 'eligible' : 'ineligible'}" style="width: ${pct(gp)}%;"></div>
+              <div class="chart-marker-65" aria-hidden="true"></div>
+            </div>
+            <div class="chart-reach ${canReach65 ? 'yes' : 'no'}">${canReach65 ? 'Can reach 65' : 'Eliminated'}</div>
+            <div class="chart-meta ${metaClass}">${escapeHtml(metaText)} · ${statLabel} ${statVal}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('apiError');
+      el.textContent = msg;
+      el.style.display = msg ? 'block' : 'none';
+    }
+
+    function showUsingSample(show) {
+      document.getElementById('usingSample').style.display = show ? 'block' : 'none';
+    }
+
+    function mapBackendLeaders(data) {
+      if (!data || !Array.isArray(data)) return [];
+      return data.map((row) => ({
+        name: row.name || '—',
+        team: row.team || '—',
+        gp: Number(row.gp) || 0,
+        team_games_played: row.team_games_played != null ? Number(row.team_games_played) : null,
+        missed: row.missed != null ? Number(row.missed) : null,
+        ppg: Number(row.ppg) || 0,
+        rpg: Number(row.rpg) || 0,
+        apg: Number(row.apg) || 0,
+        position: row.position != null ? String(row.position).trim() : '',
+      })).filter((p) => p.gp > 0 || p.ppg > 0 || p.rpg > 0 || p.apg > 0);
+    }
+
+    async function fetchLeadersFromBackend(stat) {
+      const url = `${BACKEND_URL}/api/leaders${stat ? `?stat=${encodeURIComponent(stat)}` : ''}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const json = await res.json();
+      return {
+        players: mapBackendLeaders(json.data),
+        seasonGamesPlayed: Number(json.season_games_played) || 0,
+        gamesRemaining: Number(json.games_remaining) ?? Math.max(0, 82 - Number(json.season_games_played) || 0),
+        season: json.season || '',
+        stat: json.stat || 'pts',
+      };
+    }
+
+    function loadData() {
+      const chartEl = document.getElementById('leadersChart');
+      const stat = document.getElementById('statSelect').value;
+      chartEl.innerHTML = '<div class="loading" style="padding: 2rem;">Loading…</div>';
+      showError('');
+      showUsingSample(false);
+
+      fetchLeadersFromBackend(stat)
+        .then(({ players, seasonGamesPlayed, gamesRemaining, season }) => {
+          const noteEl = document.getElementById('seasonGamesNote');
+          const parts = [];
+          if (season) parts.push(season);
+          if (seasonGamesPlayed > 0) parts.push(`${seasonGamesPlayed}/82 games`);
+          if (gamesRemaining > 0) parts.push(`${gamesRemaining} left`);
+          noteEl.textContent = parts.length ? parts.join(' · ') : '';
+          if (players.length === 0) {
+            renderLeadersChart(SAMPLE_DATA, SAMPLE_SEASON_GAMES, 0, 'pts');
+            showUsingSample(true);
+            showError('No leaders data; showing sample data.');
+          } else {
+            renderLeadersChart(players, seasonGamesPlayed, gamesRemaining, stat);
+          }
+        })
+        .catch((err) => {
+          document.getElementById('seasonGamesNote').textContent = '';
+          renderLeadersChart(SAMPLE_DATA, SAMPLE_SEASON_GAMES, 0, 'pts');
+          showUsingSample(true);
+          showError(err.message || 'Backend unavailable. Start the Python server (see README).');
+        });
+    }
+
+    document.getElementById('statSelect').addEventListener('change', loadData);
+    loadData();
+  </script>
+</body>
+</html>
